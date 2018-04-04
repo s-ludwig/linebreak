@@ -1,0 +1,5 @@
+name "linebreak"
+description "Generates line breaking points based on Unicode® Standard Annex #14"
+authors "Devon Govett" "Sönke Ludwig"
+copyright "Copyright © 2014-2016 Devon Govett, Copyright © 2018 Sönke Ludwig"
+license "MIT"
