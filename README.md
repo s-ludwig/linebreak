@@ -20,3 +20,5 @@ Citing from the standard:
 
 This library has been ported from the CoffeScript implementation by
 Devon Govett: [linebreak](https://github.com/devongovett/linebreak)
+
+[![Build Status](https://travis-ci.org/s-ludwig/linebreak.svg?branch=master)](https://travis-ci.org/s-ludwig/linebreak)
