@@ -18,7 +18,25 @@ Citing from the standard:
 > the domain of higher level software with knowledge of the available width and
 > the display size of the text.
 
-This library has been ported from the CoffeScript implementation by
+This library has been ported from the CoffeeScript implementation by
 Devon Govett: [linebreak](https://github.com/devongovett/linebreak)
 
 [![Build Status](https://travis-ci.org/s-ludwig/linebreak.svg?branch=master)](https://travis-ci.org/s-ludwig/linebreak)
+
+
+Example
+-------
+
+```D
+import linebreak;
+import std.algorithm : equal, map;
+
+auto text = "Hello, world!\nThis is an (English) example.";
+auto broken = text
+	.lineBreakRange
+	.map!(lb => lb.text);
+
+assert(broken.equal([
+	"Hello, ", "world!\n", "This ", "is ", "an ", "(English) ", "example."
+]));
+```

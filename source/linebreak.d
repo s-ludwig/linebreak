@@ -8,12 +8,12 @@ module linebreak;
 unittest {
 	import std.algorithm : equal, map;
 
-	auto text = "Hello, world!\nThis is an English example.";
+	auto text = "Hello, world!\nThis is an (English) example.";
 	auto broken = text
 		.lineBreakRange
 		.map!(lb => lb.text);
 
-	assert(broken.equal(["Hello, ", "world!\n", "This ", "is ", "an ", "English ", "example."]));
+	assert(broken.equal(["Hello, ", "world!\n", "This ", "is ", "an ", "(English) ", "example."]));
 }
 
 import std.uni : CodepointTrie, codepointTrie;
