@@ -26,14 +26,18 @@ import std.algorithm.iteration : splitter;
 	original input string. The `LineBreak.required` property determines whether
 	a certain break is a hard line break or a line break opportunity.
 */
-auto lineBreakRange(string text) { return LineBreakRange(text); }
+LineBreakRange!string lineBreakRange(string text) { return LineBreakRange!string(text); }
 
-struct LineBreakRange {
+
+/// A range of line break opportunities
+struct LineBreakRange(R)
+	if (is(R == string))
+{
 	private {
-		string m_text;
+		R m_text;
 		size_t m_pos = 0, m_lastPos = 0;
 		CharClass m_curClass, m_nextClass;
-		LineBreak m_curBreak;
+		LineBreak!R m_curBreak;
 		bool m_empty;
 	}
 
@@ -46,12 +50,16 @@ struct LineBreakRange {
 		} else m_empty = true;
 	}
 
+	/// Determines whether there are no more line breaks left
 	@property bool empty() const { return m_empty; }
 
-	@property LineBreak front() const { return m_curBreak; }
+	/// The current line break
+	@property ref const(LineBreak!R) front() const { return m_curBreak; }
 
+	/// Returns a snapshot of the range.
 	@property LineBreakRange save() const { return this; }
 
+	/// Advances to the next break opportunity.
 	void popFront()
 	{
 		if (m_curBreak.index >= m_text.length) {
@@ -63,7 +71,7 @@ struct LineBreakRange {
 		}
 	}
 
-	private LineBreak findNextBreak()
+	private LineBreak!R findNextBreak()
 	{
 		// get the first char if we're at the beginning of the string
 		if (m_curClass == CharClass.none)
@@ -77,7 +85,7 @@ struct LineBreakRange {
 			// explicit newline
 			if (m_curClass == CharClass.BK || (m_curClass == CharClass.CR && m_nextClass != CharClass.LF)) {
 				m_curClass = mapFirst(mapClass(m_nextClass));
-				return LineBreak(m_lastPos, true);
+				return LineBreak!R(m_lastPos, true);
 			}
 
 			// handle classes not handled by the pair table
@@ -93,7 +101,7 @@ struct LineBreakRange {
 			if (cur != CharClass.none) {
 				m_curClass = cur;
 				if (m_nextClass == CharClass.CB)
-					return LineBreak(m_lastPos);
+					return LineBreak!R(m_lastPos);
 				continue;
 			}
 
@@ -122,13 +130,13 @@ struct LineBreakRange {
 
 			m_curClass = m_nextClass;
 			if (shouldBreak)
-				return LineBreak(m_lastPos);
+				return LineBreak!R(m_lastPos);
 		}
 
 		assert (m_pos >= m_text.length);
 		assert (m_lastPos < m_text.length);
 		m_lastPos = m_text.length;
-		return LineBreak(m_text.length);
+		return LineBreak!R(m_text.length);
 	}
 
 	private CharClass mapClass(CharClass c)
@@ -216,10 +224,18 @@ unittest {
 	}
 }
 
-struct LineBreak {
+
+/** Represents a single line break opprtunity.
+*/
+struct LineBreak(R) {
+	/// Code unit index of the breaking point within the input string
 	size_t index;
+
+	/// Determines whether this is a required line break
 	bool required = false;
-	string text;
+
+	/// The text between the preceeding breaking point up to this one
+	R text;
 
 	this(size_t index, bool required = false)
 	{
