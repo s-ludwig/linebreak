@@ -5,7 +5,7 @@
 module linebreak;
 
 ///
-unittest {
+@safe nothrow unittest {
 	import std.algorithm : equal, map;
 
 	auto text = "Hello, world!\nThis is an (English) example.";
@@ -26,7 +26,10 @@ import std.algorithm.iteration : splitter;
 	original input string. The `LineBreak.required` property determines whether
 	a certain break is a hard line break or a line break opportunity.
 */
-LineBreakRange!string lineBreakRange(string text) { return LineBreakRange!string(text); }
+LineBreakRange!string lineBreakRange(string text)
+@safe nothrow {
+	return LineBreakRange!string(text);
+}
 
 
 /// A range of line break opportunities
@@ -41,7 +44,7 @@ struct LineBreakRange(R)
 		bool m_empty;
 	}
 
-	this(string text)
+	this(R text)
 	{
 		m_text = text;
 		if (m_text.length) {
@@ -162,9 +165,13 @@ struct LineBreakRange(R)
 	private CharClass nextCharClass(bool first = false)
 	{
 		import std.utf : decode;
-		auto cp = m_text.decode(m_pos);
-		assert (cp != 0x3002 || s_characterClasses[cp] == CharClass.CL);
-		return mapClass(s_characterClasses[cp]);
+		dchar cp;
+		// Not supposed to throw, but returns a replacement char instead:
+		try cp = m_text.decode(m_pos);
+		catch (Exception e) assert(false);
+
+		assert (cp != 0x3002 || getCharacterClass(cp) == CharClass.CL);
+		return mapClass(getCharacterClass(cp));
 	}
 }
 
@@ -246,6 +253,11 @@ struct LineBreak(R) {
 
 
 private __gshared typeof(codepointTrie!(CharClass, 8, 5, 8)((CharClass[dchar]).init)) s_characterClasses;
+
+CharClass getCharacterClass(dchar ch)
+@trusted nothrow {
+	return s_characterClasses[ch];
+}
 
 shared static this()
 {
