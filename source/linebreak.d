@@ -261,33 +261,61 @@ CharClass getCharacterClass(dchar ch)
 
 shared static this()
 {
+	import std.algorithm.iteration : filter, map, sum;
+	import std.array : array;
 	import std.conv : parse, to;
 	import std.string : indexOf, strip;
+	import std.typecons : Tuple, tuple;
 
-	CharClass[dchar] map;
+	static struct ClsDef {
+		CharClass cls;
+		uint min, max;
+	}
 
-	foreach (ln; import("LineBreak.txt").splitter('\n')) {
-		auto hash = ln.indexOf('#');
-		if (hash >= 0) ln = ln[0 .. hash];
-		ln = ln.strip();
-		if (!ln.length) continue;
-
+	static ClsDef parseLine(string ln)
+	{
 		auto sem = ln.indexOf(';');
 		auto cls = ln[sem+1 .. $].to!CharClass;
 		ln = ln[0 .. sem];
 
 		auto rng = ln.indexOf("..");
+		uint a, b;
 		if (rng >= 0) {
-			auto a = ln[0 .. rng];
-			auto b = ln[rng+2 .. $];
-			foreach (i; a.parse!uint(16) .. b.parse!uint(16)+1)
-				map[cast(dchar)i] = cls;
+			string as = ln[0 .. rng];
+			string bs = ln[rng+2 .. $];
+			a = as.parse!uint(16);
+			b = bs.parse!uint(16);
 		} else {
-			map[cast(dchar)ln.parse!uint(16)] = cls;
+			a = b = ln.parse!uint(16);
 		}
+		return ClsDef(cls, a, b);
 	}
 
-	s_characterClasses = codepointTrie!(CharClass, 8, 5, 8)(map, CharClass.XX);
+	static immutable defs = import("LineBreak.txt")
+		.splitter('\n')
+		.map!((ln) {
+			auto hash = ln.indexOf('#');
+			if (hash >= 0) ln = ln[0 .. hash];
+			return ln.strip();
+		})
+		.filter!(ln => ln.length > 0)
+		.map!(ln => parseLine(ln))
+		.array;
+
+	size_t clscnt = defs.map!(d => d.max - d.min + 1).sum;
+	auto classes = new Tuple!(CharClass, dchar)[](clscnt);
+
+	size_t off = 0;
+	foreach (d; defs) {
+		auto cnt = d.max - d.min + 1;
+		auto dst = classes[off .. off + cnt];
+		off += cnt;
+		foreach (i; 0 .. cnt)
+			dst[i] = tuple(d.cls, d.min + i);
+	}
+	assert(off == clscnt);
+
+	s_characterClasses = codepointTrie!(CharClass, 8, 5, 8)(classes, CharClass.XX);
 }
 
 private enum CharClass {
